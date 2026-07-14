@@ -1,0 +1,84 @@
+* { box-sizing: border-box; margin: 0; }
+body { font: 15px/1.5 system-ui, sans-serif; background: #0f1115; color: #e6e8ee; }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 22px; background: #161a22; border-bottom: 1px solid #232936; }
+header h1 { font-size: 20px; }
+.sub { color: #8b93a7; font-size: 13px; }
+.back { text-decoration: none; color: #8b93a7; font-size: 20px; }
+main { max-width: 1200px; margin: 20px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 18px; }
+main.grid2 { display: grid; grid-template-columns: 1.2fr 1fr; align-items: start; }
+.card { background: #161a22; border: 1px solid #232936; border-radius: 12px; padding: 18px; }
+.card h2 { font-size: 16px; margin-bottom: 12px; color: #aeb7cc; }
+label { display: block; margin: 10px 0; font-size: 13px; color: #8b93a7; }
+input, textarea, select { width: 100%; margin-top: 4px; padding: 8px 10px; background: #0f1115; color: #e6e8ee; border: 1px solid #2b3345; border-radius: 8px; font: inherit; }
+.row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.chk { display: flex; align-items: center; gap: 6px; }
+.chk input { width: auto; }
+button { padding: 9px 16px; border: 1px solid #2b3345; border-radius: 8px; background: #1d2330; color: #e6e8ee; cursor: pointer; font: inherit; }
+button.primary { background: #2f5cff; border-color: #2f5cff; }
+button:disabled { opacity: .45; cursor: wait; }
+button.mini { padding: 4px 10px; font-size: 12px; }
+.error { color: #ff7373; margin-top: 8px; }
+.muted { color: #707890; font-size: 13px; }
+.plist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.plist a { color: #9db4ff; text-decoration: none; }
+.tag { background: #232936; border-radius: 20px; padding: 2px 10px; font-size: 12px; color: #aeb7cc; }
+.cost { color: #7ce38b; font-weight: 600; margin-left: auto; }
+.cost.big { font-size: 18px; }
+#statusbar { max-width: 1200px; margin: 10px auto 0; padding: 0 16px; display: flex; gap: 10px; align-items: center; color: #ffce6b; min-height: 22px; font-size: 14px; }
+.spinner { width: 14px; height: 14px; border: 2px solid #ffce6b44; border-top-color: #ffce6b; border-radius: 50%; animation: spin 1s linear infinite; }
+.hidden { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.chargrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.char { background: #10141c; border: 1px solid #232936; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.char img { width: 100%; border-radius: 8px; }
+.char .ph { height: 120px; display: grid; place-items: center; color: #4a5268; border: 1px dashed #2b3345; border-radius: 8px; }
+.scenetable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.scenetable th, .scenetable td { padding: 6px; border-bottom: 1px solid #232936; vertical-align: top; text-align: left; }
+.scene { border: 1px solid #232936; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #10141c; }
+.scene.ok { border-color: #2e7d4f; }
+.scenehead { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; }
+.imgs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.imgs figure img { max-height: 260px; border-radius: 8px; }
+.imgs figcaption, .clip figcaption { font-size: 12px; color: #707890; text-align: center; margin-top: 4px; }
+.scene .row input { flex: 1; }
+.audioitem { display: flex; gap: 10px; align-items: center; margin: 6px 0; font-size: 13px; }
+.clip video { max-height: 320px; border-radius: 8px; max-width: 100%; }
+#clips, #finals { display: flex; gap: 14px; flex-wrap: wrap; }
+.dl a { color: #9db4ff; }
+#costtable { width: 100%; font-size: 12px; border-collapse: collapse; }
+#costtable td, #costtable th { padding: 4px 8px; border-bottom: 1px solid #232936; text-align: left; }
+@media (max-width: 900px) { main.grid2 { grid-template-columns: 1fr; } }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; gap: 10px; align-items: center;
+  background: #1d2330; border: 1px solid #3a4460; border-radius: 12px; padding: 12px 16px; max-width: 420px;
+  color: #ffce6b; font-size: 13px; box-shadow: 0 6px 24px #0009; }
+.toast.hidden { display: none; }  /* gana a .toast por especificidad (antes no se ocultaba) */
+.progress { margin: 4px 0 14px; }
+.pline { display: flex; gap: 12px; align-items: center; font-size: 13px; color: #aeb7cc; margin-bottom: 8px; }
+.pbar { flex: 1; height: 8px; background: #232936; border-radius: 6px; overflow: hidden; }
+.pfill { height: 100%; background: linear-gradient(90deg, #2f5cff, #7ce38b); transition: width .6s; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 3px 10px; border-radius: 20px; border: 1px solid #2b3345; font-size: 12px; color: #8b93a7; }
+.chip.done { border-color: #2e7d4f; color: #7ce38b; }
+.chip.doing { border-color: #ffce6b; color: #ffce6b; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+
+/* --- tarjeta unificada por escena: guión → imagen → audio → vídeo --- */
+.scenecard { border-left: 3px solid #2b3345; }
+.scenecard .scenehead { justify-content: flex-start; margin-bottom: 14px; }
+.scenecard .scenehead strong { font-size: 16px; }
+.badge { font-size: 12px; padding: 2px 10px; border-radius: 20px; border: 1px solid #5a4a2a; color: #ffce6b; }
+.badge.ok { border-color: #2e7d4f; color: #7ce38b; }
+.ok-badge { font-size: 11px; color: #7ce38b; }
+.stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.stage { background: #10141c; border: 1px solid #232936; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.stagelabel { font-size: 13px; font-weight: 600; color: #aeb7cc; }
+.stagemedia { width: 100%; max-height: 340px; object-fit: contain; border-radius: 8px; background: #000; }
+.gfields { display: flex; flex-direction: column; gap: 6px; }
+.gfields label { margin: 0; font-size: 12px; }
+.grow { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.grow label { flex: 1; }
+.grow label.short { flex: 0 0 60px; }
+.stage .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0; }
+.stage .row input { flex: 1; min-width: 120px; }
+.stage audio { width: 100%; }

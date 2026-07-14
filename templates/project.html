@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>#{{p.id}} · {{p.title}}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css?v=7">
+</head>
+<body data-pid="{{p.id}}" data-mode="{{p.mode}}">
+<header>
+  <a href="/" class="back">←</a>
+  <h1 id="ptitle">{{p.title}}</h1>
+  <span class="tag">{{p.mode}}</span>
+  <span class="cost big" id="cost">$0.00</span>
+</header>
+
+<div id="statusbar"><span id="spinner" class="spinner hidden"></span><span id="statusmsg"></span></div>
+
+<main>
+  <section class="card">
+    <h2>Acciones</h2>
+    <div class="actions">
+      <button class="primary" data-act="storyboard">🧠 Storyboard + personajes</button>
+      <button data-act="images">🎨 Generar imágenes</button>
+      <button data-act="approve_all">✅ Aprobar todas</button>
+      <button class="video-only" data-act="audio">🎙️ Voz + música</button>
+      <button class="primary video-only" id="animateBtn">🎬 Generar vídeos</button>
+      <button class="primary" data-act="assemble">📦 Generar entregables</button>
+    </div>
+    <div id="globalprog" class="progress"></div>
+  </section>
+
+  <section class="card">
+    <h2>Personajes</h2>
+    <div id="characters" class="chargrid"></div>
+  </section>
+
+  <div id="sceneCards"></div>
+
+  <section class="card">
+    <h2>Entregables</h2>
+    <div id="finals"></div>
+  </section>
+
+  <section class="card">
+    <h2>Costes</h2>
+    <table id="costtable"><thead><tr><th>Modelo</th><th>Concepto</th><th>USD</th></tr></thead><tbody></tbody></table>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"><span class="spinner"></span><span id="toastmsg"></span></div>
+
+<script>const VOICES = {{ voices | tojson }};</script>
+<script src="/static/app.js?v=7"></script>
+</body>
+</html>

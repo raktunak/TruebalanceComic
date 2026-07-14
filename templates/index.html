@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TruebalanceComic — Estudio IA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header><h1>🎬 TruebalanceComic</h1><span class="sub">guion → slides · cómic · vídeo (Vertex AI)</span></header>
+
+<main class="grid2">
+  <section class="card">
+    <h2>Nuevo proyecto</h2>
+    <label>Título<input id="title" placeholder="Ej: Pareja discute por dinero"></label>
+    <label>Guion / idea
+      <textarea id="script" rows="7" placeholder="Ej: Una pareja discute porque no llegan a fin de mes... al final descubren Truebalance y organizan sus gastos juntos."></textarea>
+    </label>
+    <label>Modo
+      <select id="mode">
+        {% for k, v in modes.items() %}<option value="{{k}}">{{v}}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="row">
+      <label class="chk"><input type="checkbox" class="fmt" value="9:16" checked> 9:16 vertical</label>
+      <label class="chk"><input type="checkbox" class="fmt" value="16:9"> 16:9 horizontal</label>
+    </div>
+    <div class="row" id="audioRow">
+      <label class="chk"><input type="checkbox" id="audioFirst"> 🎙️ Audio primero (la voz fija la duración)</label>
+      <label>Voz <select id="voice">{% for v in voices %}<option>{{v}}</option>{% endfor %}</select></label>
+    </div>
+    <details>
+      <summary>Modelos por tarea (avanzado)</summary>
+      {% for task, models in tasks.items() %}
+      <label>{{task}}
+        <select class="model" data-task="{{task}}">
+          {% for mid, m in models.items() %}
+          <option value="{{mid}}" {% if mid == defaults[task] %}selected{% endif %}>{{m.label}}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endfor %}
+    </details>
+    <button id="create" class="primary">Crear proyecto</button>
+    <div id="err" class="error"></div>
+  </section>
+
+  <section class="card">
+    <h2>Proyectos</h2>
+    {% if not projects %}<p class="muted">Aún no hay proyectos.</p>{% endif %}
+    <ul class="plist">
+      {% for pr in projects %}
+      <li><a href="/project/{{pr.id}}">#{{pr.id}} · {{pr.title}}</a>
+        <span class="tag">{{pr.mode}}</span>
+        <span class="tag">{{pr.status}}</span>
+        <span class="cost">${{ '%.2f'|format(pr.cost_total) }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+</main>
+
+<script>
+document.getElementById('mode').onchange = e => {
+  document.getElementById('audioRow').style.display = e.target.value === 'video' ? 'flex' : 'none';
+};
+document.getElementById('create').onclick = async () => {
+  const formats = [...document.querySelectorAll('.fmt:checked')].map(x => x.value);
+  const models = {};
+  document.querySelectorAll('.model').forEach(s => models[s.dataset.task] = s.value);
+  const body = {
+    title: document.getElementById('title').value,
+    script: document.getElementById('script').value,
+    mode: document.getElementById('mode').value,
+    formats, models,
+    audio_first: document.getElementById('audioFirst').checked,
+    voice: document.getElementById('voice').value,
+  };
+  const r = await fetch('/api/projects', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const d = await r.json();
+  if (r.ok) location.href = '/project/' + d.id;
+  else document.getElementById('err').textContent = d.detail || d.error || 'Error';
+};
+</script>
+</body>
+</html>
