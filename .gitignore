@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Base de datos en tiempo de ejecución
+truebalance.db
+truebalance.db-shm
+truebalance.db-wal
+
+# Salidas generadas por proyecto (imágenes, audio, clips, previews, vídeos)
+projects/
+
+# Capturas de prueba en la raíz
+/*.png
