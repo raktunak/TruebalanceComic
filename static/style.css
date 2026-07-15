@@ -92,3 +92,32 @@ button.mini { padding: 4px 10px; font-size: 12px; }
 .stage .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0; }
 .stage .row input { flex: 1; min-width: 120px; }
 .stage audio { width: 100%; }
+.stage select[multiple] { min-height: 84px; }
+
+/* --- estudio: menú lateral de secciones --- */
+.layout { display: flex; flex-direction: column; gap: 16px; }
+.sidebar { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.sidebar .navbtn { flex: 1 1 auto; white-space: nowrap; text-align: left; }
+.content { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.navbtn.active { background: #2f5cff; border-color: #2f5cff; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+.view.hidden { display: none; }
+@media (min-width: 900px) {
+  .layout { flex-direction: row; align-items: flex-start; }
+  .sidebar { flex-direction: column; flex: 0 0 210px; position: sticky; top: 12px; }
+  .sidebar .navbtn { width: 100%; }
+}
+
+/* --- fichas de biblia: personajes / localizaciones / objetos / voces --- */
+.bcreate { background: #0f1115; border: 1px solid #2b3345; border-radius: 10px; padding: 12px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
+.bcreate summary { cursor: pointer; color: #9db4ff; font-size: 13px; margin-top: 4px; }
+.bcreate .grow { margin-top: 8px; }
+.char label.mini, .stage label.mini { margin: 4px 0; font-size: 12px; }
+.char audio { width: 100%; }
+.char .row { margin: 4px 0; }
+.row .modelsel, .grow .modelsel, .bcreate .modelsel { flex: 1 1 160px; width: auto; }
+button.danger { border-color: #7a2b2b; color: #ff9b9b; }
+label.upl { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; margin: 4px 0; }
+.scripttext { white-space: pre-wrap; font-size: 13px; color: #c7cede; max-height: 320px; overflow: auto;
+  background: #0f1115; border: 1px solid #2b3345; border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+tr.inactive { opacity: .5; }

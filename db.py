@@ -64,6 +64,37 @@ CREATE TABLE IF NOT EXISTS costs (
     project_id INTEGER NOT NULL,
     ts REAL, model TEXT, units TEXT, usd REAL
 );
+CREATE TABLE IF NOT EXISTS locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    name TEXT, description TEXT,
+    type TEXT DEFAULT '',           -- interior | exterior | ...
+    ref_image TEXT DEFAULT '',      -- plate principal (path relativo al proyecto)
+    ref_images TEXT DEFAULT '[]',   -- JSON: plates por ángulo/encuadre
+    library INTEGER DEFAULT 0,
+    approved INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS props (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    name TEXT, description TEXT,
+    category TEXT DEFAULT 'objeto',  -- objeto|vehiculo|vestuario|accesorio|mascota
+    owner_character_id INTEGER,      -- personaje dueño (nullable)
+    ref_image TEXT DEFAULT '',
+    ref_images TEXT DEFAULT '[]',
+    library INTEGER DEFAULT 0,
+    approved INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS voices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    name TEXT,
+    base_voice TEXT DEFAULT 'Kore',  -- voz prebuilt Gemini (config.VOICES)
+    instruction TEXT DEFAULT '',     -- tono/ritmo/emoción para el TTS
+    sample_path TEXT DEFAULT '',     -- muestra de audio (path relativo)
+    library INTEGER DEFAULT 0,
+    approved INTEGER DEFAULT 0
+);
 """
 
 
@@ -86,7 +117,12 @@ def init():
         # migraciones para DBs anteriores
         _ensure_col(c, "characters", "gender", "TEXT DEFAULT ''")
         _ensure_col(c, "characters", "voice", "TEXT DEFAULT ''")
+        _ensure_col(c, "characters", "ref_images", "TEXT DEFAULT '[]'")  # model sheet multi-vista
+        _ensure_col(c, "characters", "voice_id", "INTEGER")             # voz del stock reutilizable
         _ensure_col(c, "scenes", "speaker", "TEXT DEFAULT ''")
+        _ensure_col(c, "scenes", "char_ids", "TEXT DEFAULT '[]'")       # personajes presentes (JSON)
+        _ensure_col(c, "scenes", "location_id", "INTEGER")              # localización de la escena
+        _ensure_col(c, "scenes", "prop_ids", "TEXT DEFAULT '[]'")       # objetos presentes (JSON)
         # un proceso recién arrancado no tiene jobs vivos: liberar 'busy' colgados
         c.execute("UPDATE projects SET busy=0 WHERE busy=1")
     PROJECTS_DIR.mkdir(exist_ok=True)
@@ -100,7 +136,7 @@ def create_project(title, mode, formats, script, models, audio_first, voice):
         )
         pid = cur.lastrowid
     pdir = PROJECTS_DIR / str(pid)
-    for sub in ("characters", "scenes", "audio", "clips", "final"):
+    for sub in ("characters", "locations", "props", "scenes", "audio", "clips", "final"):
         (pdir / sub).mkdir(parents=True, exist_ok=True)
     return pid
 
@@ -240,3 +276,52 @@ def add_cost(pid, model, units, usd):
 def get_costs(pid):
     with conn() as c:
         return [dict(r) for r in c.execute("SELECT * FROM costs WHERE project_id=? ORDER BY id DESC", (pid,))]
+
+
+# --- biblias genéricas (locations, props, voices) -------------------------------
+# Los nombres de tabla/columna vienen SIEMPRE de código nuestro, nunca del usuario.
+
+ENTITY_TABLE = {"location": "locations", "prop": "props", "voice": "voices", "character": "characters"}
+
+
+def _table(entity: str) -> str:
+    t = ENTITY_TABLE.get(entity)
+    if not t:
+        raise ValueError(f"entidad desconocida: {entity}")
+    return t
+
+
+def add_entity(pid, entity, **cols) -> int:
+    t = _table(entity)
+    keys = ",".join(cols)
+    ph = ",".join("?" for _ in cols)
+    sql = f"INSERT INTO {t} (project_id{',' + keys if keys else ''}) VALUES (?{',' + ph if ph else ''})"
+    with conn() as c:
+        cur = c.execute(sql, (pid, *cols.values()))
+        return cur.lastrowid
+
+
+def get_entities(pid, entity):
+    t = _table(entity)
+    with conn() as c:
+        return [dict(r) for r in c.execute(f"SELECT * FROM {t} WHERE project_id=? ORDER BY id", (pid,))]
+
+
+def get_entity(entity, eid):
+    t = _table(entity)
+    with conn() as c:
+        r = c.execute(f"SELECT * FROM {t} WHERE id=?", (eid,)).fetchone()
+    return dict(r) if r else None
+
+
+def update_entity(entity, eid, **kw):
+    t = _table(entity)
+    sets = ",".join(f"{k}=?" for k in kw)
+    with conn() as c:
+        c.execute(f"UPDATE {t} SET {sets} WHERE id=?", (*kw.values(), eid))
+
+
+def delete_entity(entity, eid):
+    t = _table(entity)
+    with conn() as c:
+        c.execute(f"DELETE FROM {t} WHERE id=?", (eid,))

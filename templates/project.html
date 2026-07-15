@@ -4,53 +4,125 @@
 <meta charset="utf-8">
 <title>#{{p.id}} · {{p.title}}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/static/style.css?v=8">
+<link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 <body data-pid="{{p.id}}" data-mode="{{p.mode}}">
 <header>
   <a href="/" class="back">←</a>
   <h1 id="ptitle">{{p.title}}</h1>
   <span class="tag">{{p.mode}}</span>
-  <span class="cost big" id="cost">$0.00</span>
+  <span class="cost big" id="cost">$0.0000</span>
 </header>
 
 <div id="statusbar"><span id="spinner" class="spinner hidden"></span><span id="statusmsg"></span></div>
 
 <main>
-  <section class="card">
-    <h2>Acciones</h2>
-    <div class="actions">
-      <button class="primary" data-act="storyboard">🧠 Storyboard + personajes</button>
-      <button data-act="images">🎨 Generar imágenes</button>
-      <button data-act="approve_all">✅ Aprobar todas</button>
-      <button class="video-only" data-act="audio">🎙️ Voz + música</button>
-      <button class="primary video-only" id="animateBtn">🎬 Generar vídeos</button>
-      <button class="primary" data-act="assemble">📦 Generar entregables</button>
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <button class="navbtn active" data-view="guion">📝 Guion</button>
+      <button class="navbtn" data-view="characters">🧑 Personajes</button>
+      <button class="navbtn" data-view="locations">🏙️ Localizaciones</button>
+      <button class="navbtn" data-view="props">🎒 Objetos y vestuario</button>
+      <button class="navbtn video-only" data-view="voices">🎙️ Voces</button>
+      <button class="navbtn" data-view="scenes">🎬 Storyboard/Escenas</button>
+      <button class="navbtn video-only" data-view="animation">🎥 Animación</button>
+      <button class="navbtn" data-view="assemble">📦 Montaje/Exportar</button>
+    </nav>
+
+    <div class="content">
+
+      <div class="view" data-view="guion">
+        <section class="card">
+          <h2>Guion</h2>
+          <pre class="scripttext" id="scripttext">{{ p.script }}</pre>
+          <button class="primary" data-act="storyboard">🧠 Generar storyboard + personajes</button>
+        </section>
+      </div>
+
+      <div class="view hidden" data-view="characters">
+        <section class="card">
+          <h2>Personajes</h2>
+          <div id="characters"></div>
+        </section>
+      </div>
+
+      <div class="view hidden" data-view="locations">
+        <section class="card">
+          <h2>Localizaciones</h2>
+          <div id="locations"></div>
+        </section>
+      </div>
+
+      <div class="view hidden" data-view="props">
+        <section class="card">
+          <h2>Objetos y vestuario</h2>
+          <div id="props"></div>
+        </section>
+      </div>
+
+      <div class="view hidden video-only" data-view="voices">
+        <section class="card">
+          <h2>Voces</h2>
+          <div id="voices"></div>
+        </section>
+      </div>
+
+      <div class="view hidden" data-view="scenes">
+        <section class="card">
+          <h2>Storyboard / Escenas</h2>
+          <div class="actions">
+            <button data-act="approve_all">✅ Aprobar todas</button>
+            <span id="imagesModelWrap"></span>
+            <button class="primary" id="imagesBtn">🎨 Generar imágenes</button>
+          </div>
+          <div id="globalprog" class="progress progressSlot"></div>
+        </section>
+        <div id="sceneCards"></div>
+      </div>
+
+      <div class="view hidden video-only" data-view="animation">
+        <section class="card">
+          <h2>Animación</h2>
+          <div class="actions">
+            <button class="video-only" data-act="audio">🎙️ Voz + música</button>
+            <button class="primary video-only" id="animateBtn">🎬 Generar vídeos</button>
+          </div>
+          <div id="animprog" class="progress progressSlot"></div>
+          <p class="muted">La reedición de vídeo/voz de cada escena está en su tarjeta, dentro de Storyboard/Escenas.</p>
+        </section>
+      </div>
+
+      <div class="view hidden" data-view="assemble">
+        <section class="card">
+          <h2>Montaje / Exportar</h2>
+          <div class="actions">
+            <button class="primary" data-act="assemble">📦 Generar entregables</button>
+            <button data-act="export_zip">🗜️ Exportar ZIP (proyecto completo)</button>
+            <a class="dl" href="/api/project/{{p.id}}/export.json" download>⬇️ Exportar JSON</a>
+            <a class="dl" href="/files/{{p.id}}/final/project_{{p.id}}.zip" download>⬇️ Descargar último ZIP</a>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Entregables</h2>
+          <div id="finals"></div>
+        </section>
+        <section class="card">
+          <h2>Costes</h2>
+          <table id="costtable"><thead><tr><th>Modelo</th><th>Concepto</th><th>USD</th></tr></thead><tbody></tbody></table>
+        </section>
+      </div>
+
     </div>
-    <div id="globalprog" class="progress"></div>
-  </section>
-
-  <section class="card">
-    <h2>Personajes</h2>
-    <div id="characters" class="chargrid"></div>
-  </section>
-
-  <div id="sceneCards"></div>
-
-  <section class="card">
-    <h2>Entregables</h2>
-    <div id="finals"></div>
-  </section>
-
-  <section class="card">
-    <h2>Costes</h2>
-    <table id="costtable"><thead><tr><th>Modelo</th><th>Concepto</th><th>USD</th></tr></thead><tbody></tbody></table>
-  </section>
+  </div>
 </main>
 
 <div id="toast" class="toast hidden"><span class="spinner"></span><span id="toastmsg"></span></div>
 
-<script>const VOICES = {{ voices | tojson }};</script>
-<script src="/static/app.js?v=8"></script>
+<script>
+const VOICES = {{ voices | tojson }};
+const TASKS = {{ tasks | tojson }};
+const DEFAULTS = {{ defaults | tojson }};
+</script>
+<script src="/static/app.js?v=9"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ Consistencia: el estilo global + las imágenes de referencia de los personajes
 se inyectan en cada llamada. En modo vídeo, el keyframe final de la escena N
 se pasa como referencia de continuidad para la escena N+1.
 """
+import json
 import re
 from pathlib import Path
 
@@ -58,7 +59,7 @@ def _generate(pid, model_key, parts, fmt, out_path: Path, units_label):
 
 
 def _ref_parts(pid, only_names=None):
-    """Imágenes de referencia de personajes aprobadas, como parts."""
+    """Imágenes de referencia de personajes aprobadas, como parts (todos los del proyecto)."""
     parts = []
     for ch in db.get_characters(pid):
         if not ch["ref_image"]:
@@ -73,22 +74,106 @@ def _ref_parts(pid, only_names=None):
     return parts
 
 
-def gen_character_ref(pid, char_id) -> str:
-    """Ficha de referencia de un personaje (cuerpo entero, fondo neutro)."""
-    p = db.get_project(pid)
-    ch = next(c for c in db.get_characters(pid) if c["id"] == char_id)
-    style = storyboard.get_style(pid)
-    model_key = p["models"]["image"]
-    prompt = (
-        f"Ficha de referencia de personaje para producción audiovisual. Estilo: {style}. "
-        f"Personaje: {ch['name']}. {ch['description']}. "
+def _json_list(v):
+    if isinstance(v, list):
+        return v
+    if not v:
+        return []
+    try:
+        x = json.loads(v)
+        return x if isinstance(x, list) else []
+    except Exception:
+        return []
+
+
+def _img_part(pid, rel, label):
+    f = db.project_dir(pid) / rel
+    if not f.exists():
+        return []
+    return [types.Part.from_text(text=label),
+            types.Part.from_bytes(data=f.read_bytes(), mime_type="image/png")]
+
+
+def _scene_ref_parts(pid, scene):
+    """Referencias aprobadas a inyectar en la escena: personajes/localización/objetos enlazados.
+
+    Si la escena no trae enlaces (storyboard antiguo), cae al comportamiento previo: todos los
+    personajes del proyecto. La IMAGEN de referencia manda sobre el texto (decisión de diseño).
+    """
+    parts = []
+    char_ids = _json_list(scene.get("char_ids"))
+    chars = db.get_characters(pid)
+    if char_ids:
+        chars = [c for c in chars if c["id"] in char_ids]
+    for ch in chars:
+        if ch.get("ref_image"):
+            parts += _img_part(pid, ch["ref_image"],
+                               f"Referencia del personaje {ch['name']} ({ch['description']}):")
+    loc_id = scene.get("location_id")
+    if loc_id:
+        loc = db.get_entity("location", loc_id)
+        if loc and loc.get("ref_image"):
+            parts += _img_part(pid, loc["ref_image"],
+                               f"Referencia de la localización {loc['name']} "
+                               "(mantén su distribución, luz y materiales):")
+    for prop_id in _json_list(scene.get("prop_ids")):
+        prop = db.get_entity("prop", prop_id)
+        if prop and prop.get("ref_image"):
+            parts += _img_part(pid, prop["ref_image"],
+                               f"Referencia del objeto {prop['name']} (mantén su diseño):")
+    return parts
+
+
+def _present_names(pid, scene):
+    char_ids = _json_list(scene.get("char_ids"))
+    if not char_ids:
+        return []
+    return [c["name"] for c in db.get_characters(pid) if c["id"] in char_ids]
+
+
+_ENTITY_FOLDER = {"character": "characters", "location": "locations", "prop": "props"}
+
+
+def _entity_ref_prompt(entity, ent, style, suffix):
+    if entity == "location":
+        return (
+            f"Plate de referencia de LOCALIZACIÓN para producción audiovisual. Estilo: {style}. "
+            f"Lugar: {ent['name']} ({ent.get('type', '')}). {ent['description']}. "
+            "Plano general del espacio VACÍO (sin personajes), iluminación coherente, "
+            "sin texto, sin marcas de agua." + suffix
+        )
+    if entity == "prop":
+        return (
+            f"Ficha de referencia de OBJETO para producción audiovisual. Estilo: {style}. "
+            f"Objeto: {ent['name']} ({ent.get('category', '')}). {ent['description']}. "
+            "El objeto centrado sobre fondo gris liso, iluminación de estudio, "
+            "sin texto, sin marcas de agua." + suffix
+        )
+    return (
+        f"Ficha de referencia de PERSONAJE para producción audiovisual. Estilo: {style}. "
+        f"Personaje: {ent['name']}. {ent['description']}. "
         "Cuerpo entero, pose neutra de pie, fondo gris liso, iluminación uniforme. "
-        "Sin texto, sin marcas de agua." + config.MODEL_REGISTRY[model_key].get("prompt_suffix", "")
+        "Sin texto, sin marcas de agua." + suffix
     )
-    rel = f"characters/{char_id}.png"
-    _generate(pid, model_key, [prompt], "9:16", db.project_dir(pid) / rel, f"ficha {ch['name']}")
-    db.update_character(char_id, ref_image=rel)
+
+
+def gen_entity_ref(pid, entity, eid, model_key="") -> str:
+    """Genera la imagen de referencia de una entidad de biblia (personaje/localización/objeto)."""
+    p = db.get_project(pid)
+    ent = db.get_entity(entity, eid)
+    style = storyboard.get_style(pid)
+    model_key = model_key or p["models"]["image"]
+    suffix = config.MODEL_REGISTRY[model_key].get("prompt_suffix", "")
+    prompt = _entity_ref_prompt(entity, ent, style, suffix)
+    rel = f"{_ENTITY_FOLDER[entity]}/{eid}.png"
+    _generate(pid, model_key, [prompt], "9:16", db.project_dir(pid) / rel, f"ref {ent['name']}")
+    db.update_entity(entity, eid, ref_image=rel)
     return rel
+
+
+def gen_character_ref(pid, char_id, model_key="") -> str:
+    """Ficha de referencia de un personaje (compat: delega en gen_entity_ref)."""
+    return gen_entity_ref(pid, "character", char_id, model_key=model_key)
 
 
 _SPEAKER_RE = re.compile(r"\b([A-ZÁÉÍÓÚÑ]{2,20}):\s*")
@@ -138,15 +223,16 @@ def _scene_prompt(p, scene, style, kind):
     )
 
 
-def gen_scene_image(pid, scene_id, kind, fmt, feedback: str = ""):
-    """Genera slide/viñeta/keyframe de una escena. feedback = correcciones del QC o del usuario."""
+def gen_scene_image(pid, scene_id, kind, fmt, feedback: str = "", model_key: str = ""):
+    """Genera slide/viñeta/keyframe de una escena. feedback = correcciones del QC o del usuario.
+    model_key permite sobreescribir el modelo del proyecto solo para esta llamada."""
     p = db.get_project(pid)
     scene = db.get_scene(scene_id)
     style = storyboard.get_style(pid)
-    model_key = p["models"]["image"]
+    model_key = model_key or p["models"]["image"]
 
     parts: list = []
-    parts += _ref_parts(pid)
+    parts += _scene_ref_parts(pid, scene)
 
     # continuidad en vídeo: el fotograma de la escena anterior (mismo formato) como referencia
     if p["mode"] == "video":
@@ -163,6 +249,10 @@ def gen_scene_image(pid, scene_id, kind, fmt, feedback: str = ""):
                     parts.append(types.Part.from_bytes(data=f.read_bytes(), mime_type="image/png"))
 
     prompt = _scene_prompt(p, scene, style, kind)
+    present = _present_names(pid, scene)
+    if len(present) > 1:  # etiquetado de personajes cuando hay varios en el plano
+        prompt += (f" Personajes presentes en el plano: {', '.join(present)}. "
+                   "Mantén la identidad de cada uno según su imagen de referencia.")
     if feedback:
         prompt += f" CORRECCIONES OBLIGATORIAS respecto al intento anterior: {feedback}"
     prompt += config.MODEL_REGISTRY[model_key].get("prompt_suffix", "")
@@ -173,6 +263,44 @@ def gen_scene_image(pid, scene_id, kind, fmt, feedback: str = ""):
     rel = f"scenes/{scene['ord']:02d}_{kind}_{safe_fmt}_v{n}.png"
     out = db.project_dir(pid) / rel
     _generate(pid, model_key, parts, fmt, out, f"escena {scene['ord'] + 1} {kind}")
+    db.add_asset(pid, scene_id, kind, out, model=model_key,
+                 cost=costs.image_cost(model_key), fmt=fmt)
+    db.update_scene(scene_id, status="imagen")
+    return rel
+
+
+def edit_active_image(pid, scene_id, instruction, kind: str = "", fmt: str = "", model_key: str = ""):
+    """Edición conversacional (Nano Banana, vía verificada): parte de la imagen activa de la escena,
+    aplica una instrucción del usuario manteniendo la identidad y guarda una versión nueva.
+
+    Es el §10 del spec (cambiar zona/vestuario/objeto/fondo) sin máscara: 'edit_image' tipado da 404
+    en el proyecto; esta es la única vía que funciona (ver pendientes/PENDIENTES.md).
+    """
+    p = db.get_project(pid)
+    scene = db.get_scene(scene_id)
+    model_key = model_key or p["models"]["image"]
+    kind = kind or ("keyframe_first" if p["mode"] == "video" else "slide")
+    fmt = fmt or p["formats"][0]
+
+    actives = [a for a in db.get_assets(pid, scene_id=scene_id, kind=kind) if a["format"] == fmt]
+    if not actives:
+        raise RuntimeError("no hay imagen activa que editar en esta escena; genérala primero")
+    data = Path(actives[-1]["path"]).read_bytes()
+
+    prompt = (
+        "Edita esta imagen manteniendo EXACTAMENTE la misma identidad (rostro, pelo, edad, "
+        "proporciones), el mismo encuadre, estilo e iluminación. Aplica solo este cambio pedido por "
+        f"el usuario: {instruction.strip()}. Sin texto, sin marcas de agua."
+        + config.MODEL_REGISTRY[model_key].get("prompt_suffix", "")
+    )
+    parts = [types.Part.from_bytes(data=data, mime_type="image/png"),
+             types.Part.from_text(text=prompt)]
+
+    safe_fmt = fmt.replace(":", "x")
+    n = len(db.get_assets(pid, scene_id=scene_id, kind=kind, active_only=False)) + 1
+    rel = f"scenes/{scene['ord']:02d}_{kind}_{safe_fmt}_v{n}.png"
+    out = db.project_dir(pid) / rel
+    _generate(pid, model_key, parts, fmt, out, f"edición escena {scene['ord'] + 1}")
     db.add_asset(pid, scene_id, kind, out, model=model_key,
                  cost=costs.image_cost(model_key), fmt=fmt)
     db.update_scene(scene_id, status="imagen")

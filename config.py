@@ -86,6 +86,10 @@ MODES = {
 
 FORMATS = ["9:16", "16:9"]
 
+# Decisión de diseño: el sistema NO comprueba nada automáticamente; genera y muestra, el humano
+# aprueba a ojo. El módulo services/qc.py se conserva pero queda desactivado por defecto.
+QC_ENABLED = False
+
 VOICES = ["Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda"]  # voces prebuilt Gemini TTS
 VOICE_GENDER = {"Kore": "mujer", "Aoede": "mujer", "Leda": "mujer",
                 "Puck": "hombre", "Charon": "hombre", "Fenrir": "hombre"}

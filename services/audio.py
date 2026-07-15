@@ -152,6 +152,43 @@ def gen_voice(pid, scene_id, instruction="") -> dict:
     return {"path": rel, "seconds": secs}
 
 
+def gen_voice_sample(pid, voice_id, text="", model_key="") -> str:
+    """Sintetiza una frase de prueba con una voz del stock, para comparar voces antes de asignarla."""
+    p = db.get_project(pid)
+    v = db.get_entity("voice", voice_id)
+    if not v:
+        raise RuntimeError("voz no encontrada")
+    model_key = model_key or p["models"]["tts"]
+    mid = config.real_model_id(model_key)
+    loc = config.MODEL_REGISTRY[model_key]["location"]
+    base = v.get("base_voice") or "Kore"
+    tone = f" ({v['instruction']})" if v.get("instruction") else ""
+    text = (text or "Hola, esta es una muestra de mi voz para el proyecto.").strip()
+
+    def _call():
+        return vertex.client(loc).models.generate_content(
+            model=mid, contents=f"Lee en español con tono natural{tone}: {text}",
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"], speech_config=_single_speech_config(base)),
+        )
+
+    r = vertex.call_with_retry(_call)
+    pcm = b""
+    for part in r.candidates[0].content.parts:
+        if getattr(part, "inline_data", None) and part.inline_data.data:
+            pcm += part.inline_data.data
+    if not pcm:
+        raise RuntimeError("TTS sin audio en la respuesta")
+    rel = f"audio/voice_sample_{voice_id}.wav"
+    out = db.project_dir(pid) / rel
+    out.parent.mkdir(parents=True, exist_ok=True)
+    _wrap_wav(pcm, out)
+    usd = costs.token_cost(model_key, r.usage_metadata)
+    costs.register(pid, model_key, f"muestra voz {v.get('name', '')}", usd)
+    db.update_entity("voice", voice_id, sample_path=rel)
+    return rel
+
+
 def gen_music(pid, prompt_extra="") -> str:
     """Música de fondo con Lyria (endpoint predict). Falla con gracia: devuelve '' si no hay música."""
     p = db.get_project(pid)
