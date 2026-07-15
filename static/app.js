@@ -9,6 +9,7 @@ const esc = t => (t || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const fileUrl = p => `/files/${PID}/${p.replace(/\\/g, '/').split(`projects/${PID}/`).pop()}`;
 const last = arr => arr[arr.length - 1];
 const activeAssets = (sc, kind) => (sc.assets || []).filter(a => a.kind === kind && a.active);
+const preview = (t, n = 55) => { t = (t || '').trim(); return (esc(t.slice(0, n)) + (t.length > n ? '…' : '')) || '<i>vacío</i>'; };
 
 // Escribe innerHTML SOLO si cambió: los <video>/<audio> en reproducción no se recrean.
 function setHTML(el, html) {
@@ -129,8 +130,10 @@ function sceneCardHTML(sc) {
   const guion = `<div class="stage">
       <div class="stagelabel">📝 Guión</div>
       <div class="gfields">
-        <label>Visual<textarea data-sid="${sc.id}" data-f="visual" rows="2">${esc(sc.visual)}</textarea></label>
-        <label>Diálogo / Texto<textarea data-sid="${sc.id}" data-f="dialogue" rows="2">${esc(sc.dialogue)}</textarea></label>
+        <details class="gfield"><summary><b>Visual</b> <span class="fpreview">${preview(sc.visual)}</span></summary>
+          <textarea data-sid="${sc.id}" data-f="visual" rows="4">${esc(sc.visual)}</textarea></details>
+        <details class="gfield"><summary><b>Diálogo / Texto</b> <span class="fpreview">${preview(sc.dialogue)}</span></summary>
+          <textarea data-sid="${sc.id}" data-f="dialogue" rows="3">${esc(sc.dialogue)}</textarea></details>
         <div class="grow">
           <label>Cámara<input data-sid="${sc.id}" data-f="camera" value="${esc(sc.camera)}"></label>
           <label class="short">seg<input data-sid="${sc.id}" data-f="duration_s" value="${sc.duration_s}"></label>
