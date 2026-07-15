@@ -48,7 +48,17 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8010
   lip-sync a audio. La edición de imagen se hace por **instrucción** (Nano Banana conversacional).
 - Diseño y decisiones: `PLAN.md`. Guía detallada de conexión a Vertex: `help.txt`.
 
-## 6. Prueba rápida de que funciona
+## 6. Memoria de Claude (opcional)
+El repo incluye `claude-memoria/`, un **espejo versionado** de la memoria interna de Claude para este
+proyecto (decisiones de diseño, notas de Vertex, etc.). Claude Code la carga desde `~/.claude`, no del
+repo, así que tras clonar hidrátala una vez:
+```
+.\sync-memoria.ps1 pull
+```
+Y antes de commitear cambios de memoria, vuélcalos al espejo con `.\sync-memoria.ps1 push`.
+Detalles en `claude-memoria/README.md`.
+
+## 7. Prueba rápida de que funciona
 1. Abre http://127.0.0.1:8010 y crea un proyecto (pega un guion breve).
 2. Sección **Personajes → Crear por prompt** (ej. "mujer pelirroja con chaqueta vaquera"): la IA rellena
    la ficha y genera su imagen de referencia.
