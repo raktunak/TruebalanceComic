@@ -1,0 +1,52 @@
+TRUEBALANCECOMIC — GUIA DE CONEXION A VERTEX AI
+================================================
+
+ACCESO
+------
+- Proyecto GCP:  brainrot-walloop
+- Cuenta con acceso:  out.brainrot@gmail.com  (UNICA con permisos)
+  * apalanko@ y raktunak@ emiten token pero dan "caller does not have permission".
+- No hay contrasena ni clave de servicio: el acceso es un token OAuth de gcloud
+  sobre esa cuenta. El token NUNCA se imprime ni se guarda en disco.
+- La service account appvoz-voice@brainrot-walloop.iam.gserviceaccount.com fue
+  ELIMINADA: no usarla ni recrearla.
+
+AUTENTICACION (PowerShell)
+--------------------------
+Obtener token (caduca a la ~1h; el servidor lo auto-renueva via gcloud):
+
+    $env:VXTOKEN = (gcloud auth print-access-token --account=out.brainrot@gmail.com)
+
+Si gcloud no tiene la sesion de esa cuenta, iniciarla una vez:
+
+    gcloud auth login out.brainrot@gmail.com
+
+ARRANQUE
+--------
+    .\run.ps1        # obtiene el token y lanza uvicorn en http://127.0.0.1:8010
+
+LOCATIONS (importante)
+----------------------
+- global       -> texto, imagen y musica (Gemini, Nano Banana, Lyria)
+- us-central1  -> video (Veo, Omni Flash)
+
+SDK
+---
+Cliente google.genai (NO google.generativeai):
+
+    from google import genai
+    from google.genai import types
+    from google.oauth2.credentials import Credentials
+    creds = Credentials(token=os.environ["VXTOKEN"].strip())
+    client = genai.Client(
+        vertexai=True, project="brainrot-walloop", location="global",
+        credentials=creds,
+        http_options=types.HttpOptions(headers={"X-Goog-User-Project": "brainrot-walloop"}),
+    )
+
+ERRORES
+-------
+- 401 / 403  -> auth (cuenta equivocada o token caducado)
+- 404        -> modelo o location equivocados (p.ej. Veo en global da 404)
+
+Mas detalle de arquitectura y modelos: ver CLAUDE.md
